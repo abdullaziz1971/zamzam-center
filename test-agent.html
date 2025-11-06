@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>اختبار وكيل زمزم</title>
+<style>
+  body{font-family:system-ui,Arial,sans-serif;margin:16px}
+  fieldset{margin:12px 0;padding:12px;border:1px solid #ccc;border-radius:8px}
+  input,textarea,button{width:100%;padding:8px;margin:6px 0}
+  code,pre{background:#f6f8fa;padding:8px;border-radius:6px;overflow:auto}
+  .row{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+  .ok{color:#117a00}.err{color:#b00020}
+</style>
+</head>
+<body>
+<h1>اختبار وكيل زمزم</h1>
+
+<fieldset>
+  <legend>إعدادات</legend>
+  <label>رابط النهاية (ثابت)</label>
+  <input id="endpoint" value="/admin_v2/publish-endpoint.php">
+  <label>المفتاح السري (استعمل نفس قيمة <code>ZAMZAM_SHARED_SECRET</code> مؤقتًا في التطوير)</label>
+  <input id="secret" placeholder="abd5526117">
+</fieldset>
+
+<fieldset>
+  <legend>اختبار القراءة</legend>
+  <label>المسار</label>
+  <input id="readPath" value="/home/u794073177/domains/dev-zamzam-center.com/public_html/index.html">
+  <button id="btnRead">قراءة الملف</button>
+  <div id="readOut"></div>
+</fieldset>
+
+<fieldset>
+  <legend>اختبار الكتابة الذرّية</legend>
+  <label>المسار</label>
+  <input id="writePath" value="/home/u794073177/domains/dev-zamzam-center.com/public_html/test-agent.txt">
+  <label>المحتوى</label>
+  <textarea id="writeContent">ok
+</textarea>
+  <button id="btnWrite">كتابة الملف</button>
+  <div id="writeOut"></div>
+</fieldset>
+
+<fieldset>
+  <legend>توليد data.js من data.json</legend>
+  <button id="btnGen">توليد data.js</button>
+  <div id="genOut"></div>
+</fieldset>
+
+<fieldset>
+  <legend>الاستجابة الخام</legend>
+  <pre id="raw"></pre>
+</fieldset>
+
+<script>
+async function callAgent(payload){
+  const ep = document.getElementById('endpoint').value.trim() || '/admin_v2/publish-endpoint.php';
+  const res = await fetch(ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const txt = await res.text();
+  document.getElementById('raw').textContent = txt;
+  try { return JSON.parse(txt); } catch { return {ok:false, parse:false, raw:txt}; }
+}
+
+function show(el, obj){
+  el.innerHTML = '';
+  const ok = document.createElement('div');
+  ok.className = obj && obj.ok ? 'ok' : 'err';
+  ok.textContent = obj && obj.ok ? '✔ نجح' : ('✖ فشل: '+(obj && (obj.error||obj.code||'')));
+  el.appendChild(ok);
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify(obj, null, 2);
+  el.appendChild(pre);
+}
+
+document.getElementById('btnRead').onclick = async ()=>{
+  const out = document.getElementById('readOut');
+  const secret = document.getElementById('secret').value.trim();
+  const path = document.getElementById('readPath').value.trim();
+  const resp = await callAgent({auth: secret, action:'read_file', path});
+  show(out, resp);
+};
+
+document.getElementById('btnWrite').onclick = async ()=>{
+  const out = document.getElementById('writeOut');
+  const secret = document.getElementById('secret').value.trim();
+  const path = document.getElementById('writePath').value.trim();
+  const content = document.getElementById('writeContent').value;
+  const resp = await callAgent({auth: secret, action:'write_file_atomic', path, content});
+  show(out, resp);
+};
+
+document.getElementById('btnGen').onclick = async ()=>{
+  const out = document.getElementById('genOut');
+  const secret = document.getElementById('secret').value.trim();
+  const resp = await callAgent({auth: secret, action:'generate_datajs'});
+  show(out, resp);
+};
+</script>
+</body></html>

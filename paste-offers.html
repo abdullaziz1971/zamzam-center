@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>لصق عروض/منتجات كجدول ⇒ تحديث الموقع</title>
+<style>
+body{font-family:system-ui,Arial;line-height:1.9;margin:16px}
+.box{border:1px solid #ddd;border-radius:12px;padding:16px;max-width:980px}
+textarea{width:100%;min-height:220px;border:1px solid #ccc;border-radius:10px;padding:10px;font-family:monospace}
+input,select,button{padding:10px 14px;border-radius:10px;border:1px solid #bbb}
+.btn{background:#0d47a1;color:#fff;border-color:#0d47a1;cursor:pointer}
+small.code{background:#f5f5f5;border-radius:6px;padding:2px 6px}
+pre{background:#fafafa;padding:10px;border-radius:8px;white-space:pre-wrap;direction:ltr}
+.ok{color:#0a7a0a}.bad{color:#b00020}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+</style>
+<script src="../data.js"></script>
+</head>
+<body>
+<div class="box">
+  <h2>لصق الجدول ← دمج فوري وتحديث الموقع</h2>
+  <p>الصيغة: صفوف مفصولة بأسطر، وأعمدة مفصولة بـ <b>Tab</b> (مثل جوجل شيت/إكسل لصق عادي).</p>
+
+  <details style="margin:8px 0" open>
+    <summary><b>نموذج جدول (انسخه وعدّل ثم الصق)</b></summary>
+<pre id="sample">
+اسم_الشركة	companyId	كود_المنتج	productCode	اسم_المنتج	unit	التعبئة_pack	السعر_price	خصم_%	نهاية_العرض_YYYY-MM-DD HH:MM	ملاحظة
+البتراء	petra	PET-001	مبيض مركز 4 لتر	كرتونة	6	8.50	10	2025-10-25 18:00	عرض 3 أيام
+البتراء	petra	PET-014	كلور 2 لتر	دزينة	12	3.20	5	2025-10-25 18:00	خصم خفيف
+</pre>
+  </details>
+
+  <div class="grid">
+    <label>كلمة السر للوحة:
+      <input id="pwd" type="password" value="zamzam2025" />
+    </label>
+    <div></div>
+  </div>
+
+  <textarea id="ta" placeholder="الصق هنا الجدول من جوجل شيت/إكسل (Tab بين الأعمدة، سطر جديد لكل منتج)"></textarea>
+  <div style="margin-top:10px">
+    <button class="btn" id="run">تنفيذ الآن</button>
+    <button id="fill" type="button">لصق النموذج في المربع</button>
+  </div>
+
+  <div id="log" style="margin-top:14px"></div>
+</div>
+
+<script>
+const log = (html, cls='')=>{
+  const d=document.getElementById('log'); const p=document.createElement('div');
+  if(cls) p.className=cls; p.innerHTML=html; d.appendChild(p);
+};
+document.getElementById('fill').onclick=()=>{ document.getElementById('ta').value=document.getElementById('sample').textContent.trim() };
+
+function parseTSV(tsv){
+  const rows = tsv.trim().split(/\r?\n/).map(r=>r.split('\t'));
+  if(rows.length<2) throw new Error('الجدول فارغ أو غير صحيح');
+  const header = rows.shift().map(h=>h.trim());
+  const idx = name => {
+    const i = header.indexOf(name);
+    if(i<0) throw new Error('العنوان ناقص: '+name);
+    return i;
+  };
+  const out = rows.map(r=>{
+    const get = n => (r[idx(n)]||'').trim();
+    return {
+      companyName: get('اسم_الشركة'),
+      companyId:   get('companyId'),
+      code:        get('كود_المنتج'),
+      productCode: get('productCode') || get('كود_المنتج'),
+      name:        get('اسم_المنتج'),
+      unit:        get('unit'),
+      pack:        get('التعبئة_pack'),
+      price:       get('السعر_price'),
+      discount:    get('خصم_%'),
+      end:         get('نهاية_العرض_YYYY-MM-DD HH:MM'),
+      note:        get('ملاحظة'),
+    };
+  });
+  return out;
+}
+
+function ensureDataShape(){
+  const D = window.ZAMZAM_DATA || {};
+  D.companies = Array.isArray(D.companies)? D.companies: [];
+  D.products  = Array.isArray(D.products)?  D.products : [];
+  D.featuredOffers = Array.isArray(D.featuredOffers)? D.featuredOffers: [];
+  return D;
+}
+
+function ensureCompany(D, id, name){
+  if(!id) throw new Error('companyId مفقود');
+  if(!D.companies.some(c=>c.id===id)){
+    D.companies.push({id, name: name||id, visible:true});
+  }
+}
+function upsertProduct(D, row){
+  const prod = {
+    id: row.productCode || row.code,
+    code: row.productCode || row.code,
+    companyId: row.companyId,
+    name: row.name,
+    unit: row.unit || 'كرتونة',
+    pack: Number(row.pack||0)||0,
+    price: Number(row.price||0)||0,
+    visible:true, status:'active'
+  };
+  const list = D.products;
+  const ix = list.findIndex(p=> (p.code===prod.code) && (p.companyId===prod.companyId));
+  if(ix>=0) list[ix] = {...list[ix], ...prod};
+  else list.push(prod);
+}
+function addFeatured(D, row){
+  const offer = {
+    companyId: row.companyId,
+    productCode: row.productCode || row.code,
+    discount: Number(row.discount||0)||0,
+    start: new Date().toISOString(),
+    end: toISO(row.end),
+    note: row.note||''
+  };
+  if(!offer.productCode) return; // لو فقط تضيف منتجات
+  if(!offer.end) throw new Error('نهاية العرض غير صحيحة للمنتج: '+offer.productCode);
+  const exists = D.featuredOffers.some(o=> o.companyId===offer.companyId && o.productCode===offer.productCode && o.end===offer.end);
+  if(!exists) D.featuredOffers.push(offer);
+}
+function toISO(s){
+  if(!s) return '';
+  // s: "YYYY-MM-DD HH:MM"
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})$/);
+  if(!m) return '';
+  const d = new Date(Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], 0));
+  return d.toISOString();
+}
+
+async function postJson(url, data){
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error || ('HTTP '+r.status));
+  return j;
+}
+
+document.getElementById('run').onclick = async ()=>{
+  document.getElementById('log').innerHTML='';
+  try{
+    const pwd = (document.getElementById('pwd').value||'').trim();
+    if(!pwd){ throw new Error('أدخل كلمة السر'); }
+
+    const tsv = (document.getElementById('ta').value||'').trim();
+    if(!tsv){ throw new Error('الرجاء لصق الجدول'); }
+
+    log('1) قراءة البيانات الحالية من <small class="code">../data.js</small>…');
+    let D = ensureDataShape();
+
+    log('2) تحليل الجدول…');
+    const rows = parseTSV(tsv);
+
+    // عدادات قبل الدمج
+    const before = {companies:D.companies.length, products:D.products.length, featured:D.featuredOffers.length};
+
+    // دمج الصفوف
+    for(const r of rows){
+      if(!r.companyId) throw new Error('كل صف يجب أن يحوي companyId');
+      ensureCompany(D, r.companyId, r.companyName);
+      upsertProduct(D, r);
+      if((r.discount && Number(r.discount)>0) || r.end){ addFeatured(D, r); }
+    }
+
+    // إعداد الحمولة لـ save-data.php
+    const payload = {
+      password: pwd,
+      companies: D.companies,
+      products:  D.products,
+      featuredOffers: D.featuredOffers,
+      mergedOffers: (Array.isArray(D.mergedOffers)? D.mergedOffers: [])
+    };
+
+    // حماية: رفض تفريغ غير مقصود
+    if(payload.companies.length===0 && payload.products.length===0 && payload.featuredOffers.length===0){
+      throw new Error('الحمولة فارغة—تم الإلغاء (حماية)');
+    }
+
+    // عدادات بعد الدمج
+    const after = {companies:payload.companies.length, products:payload.products.length, featured:payload.featuredOffers.length};
+    log(`<b>قبل الدمج</b> شركات:${before.companies} منتجات:${before.products} عروض:${before.featured}`);
+    log(`<b>بعد الدمج</b> شركات:${after.companies} منتجات:${after.products} عروض:${after.featured}`);
+
+    log('3) إرسال الحفظ إلى <small class="code">/save-data.php</small>…');
+    const res = await postJson('/save-data.php', payload);
+    log('<span class="ok">نجاح: '+(res.message||'تم الحفظ')+'</span>','ok');
+    log('4) تأكد الآن من تحديث <a href="../data.js" target="_blank">/data.js</a>.','ok');
+  }catch(e){
+    log('<span class="bad">فشل: '+(e.message||e)+'</span>','bad');
+  }
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<?php
+// admin_v2/fix_datajs.php — تنظيف وإعادة توليد public_html/data.js فقط (آمن + ذرّي)
+declare(strict_types=1);
+header('Content-Type: text/plain; charset=utf-8');
+
+const SECRET = 'abd5526117'; // ⬅️ غيّرها قبل التشغيل
+
+if (!hash_equals(SECRET, (string)($_GET['secret'] ?? ''))) {
+  http_response_code(401); exit("ERROR: bad secret\n");
+}
+
+$docroot  = rtrim($_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__).'/public_html','/');
+$adminDir = __DIR__;
+$jsonPath = $adminDir . '/data.json';
+$jsPath   = $docroot . '/data.js';
+$backupDir= $adminDir . '/backups';
+@mkdir($backupDir, 0775, true);
+
+$bak = is_file($jsPath) ? ($backupDir.'/data.js.'.gmdate('Ymd_His').'.bak') : null;
+if ($bak) { @copy($jsPath, $bak); }
+
+$rawJs = @file_get_contents($jsPath);
+if ($rawJs === false) { http_response_code(404); exit("ERROR: public data.js not found\n"); }
+
+// حاول استخراج JSON من السطر: window.ZAMZAM_DATA={...};
+$json = null;
+if (preg_match('/window\.ZAMZAM_DATA\s*=\s*(\{.*?\});/s', $rawJs, $m)) {
+  $json = $m[1];
+}
+if (!$json && is_file($jsonPath)) {
+  $json = @file_get_contents($jsonPath);
+}
+if (!$json) { exit("ERROR: could not locate JSON source\n"); }
+
+$data = json_decode($json, true);
+if (!is_array($data)) { exit("ERROR: invalid JSON payload\n"); }
+
+// احذف مفاتيح حسّاسة (بشكلٍ متعمّق)
+$sensitive = ['password','adminPassword','secrets','tokens','apiKey','auth','secret'];
+$lower = array_map('strtolower',$sensitive);
+$clean = function($v) use (&$clean,$lower){
+  if (is_array($v)) {
+    $out = [];
+    foreach ($v as $k=>$vv) {
+      if (in_array(strtolower((string)$k), $lower, true)) { continue; }
+      $out[$k] = $clean($vv);
+    }
+    return $out;
+  }
+  return $v;
+};
+$data = $clean($data);
+$data['metadata']['lastUpdate'] = gmdate('c');
+
+// أعد توليد data.js نظيف + alias + build_ts
+$ts = gmdate('Ymd_His');
+$payload  = "window.ZAMZAM_DATA=".json_encode($data, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES).";\n";
+$payload .= "if(typeof window!=='undefined'&&window.ZAMZAM_DATA&&!window.DATA){window.DATA=window.ZAMZAM_DATA;}\n";
+$payload .= "/* build_ts:$ts */\n";
+
+// كتابة ذرّية
+$tmp = $jsPath.'.tmp';
+if (file_put_contents($tmp, $payload, LOCK_EX) === false) { @unlink($tmp); exit("ERROR: write tmp failed\n"); }
+if (!@rename($tmp, $jsPath)) { @unlink($tmp); exit("ERROR: rename failed\n"); }
+@chmod($jsPath, 0644);
+
+// تحقّق أن كلمة 'password' لم تعد موجودة
+$out = @file_get_contents($jsPath) ?: '';
+$hasPwd = (stripos($out, 'password') !== false) ? 'YES' : 'NO';
+
+echo "OK\n";
+echo "backup: ".($bak ?: 'none')."\n";
+echo "build_ts: $ts\n";
+echo "password_in_output: $hasPwd\n";

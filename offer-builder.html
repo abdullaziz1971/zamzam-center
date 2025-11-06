@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>صانع العروض — وصف عربي ⇢ JSON</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --gold:#facc15;--bg:#0b1220;--card:#ffffff;--muted:#6b7280;--b:#e5e7eb;--ok:#111827;
+  }
+  *{box-sizing:border-box}
+  body{font-family:'Tajawal',system-ui,Segoe UI,Arial;background:#f7f7f9;margin:0;color:#111827}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bg);color:#fff}
+  header .brand{font-weight:800;letter-spacing:.3px}
+  header .brand .accent{color:var(--gold)}
+  main{max-width:1100px;margin:20px auto;padding:0 14px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:var(--card);border:1px solid var(--b);border-radius:12px;padding:14px}
+  h2{margin:.2rem 0 1rem;font-size:1.05rem}
+  label{display:block;margin:.45rem 0 .3rem;font-weight:600}
+  input,select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:10px;background:#fff;font-family:inherit}
+  textarea{min-height:92px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:.9rem;color:#374151;margin:.4rem 0 .6rem}
+  .pill{display:inline-block;background:#eef2ff;border:1px solid #c7d2fe;border-radius:999px;padding:2px 10px;margin:3px 4px 0 0;font-size:.83rem}
+  button.primary{background:var(--ok);color:#fff;border:0;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button.ghost{background:#fff;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;margin-inline-start:6px;cursor:pointer}
+  .out{white-space:pre-wrap;background:#0b1220;color:#e5e7eb;padding:12px;border-radius:10px;overflow:auto;min-height:140px}
+  .stack{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .muted{color:var(--muted);font-size:.88rem}
+  .line{height:1px;background:#e6e8ee;margin:12px 0}
+  .badge{display:inline-block;background:#fff7ed;color:#9a3412;border:1px dashed #fdba74;border-radius:999px;padding:2px 9px;font-size:.77rem;margin-inline-start:6px}
+  .footer-note{font-size:.86rem;color:#4b5563;margin-top:10px}
+  .small{font-size:.86rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">لوحة زمزم — <span class="accent">صانع العروض</span></div>
+  <div class="muted">v1.0 — مميز/دمج/شركات</div>
+</header>
+
+<main>
+  <div class="grid">
+    <!-- LEFT: Input form -->
+    <section class="card">
+      <h2>المدخلات</h2>
+
+      <label>الوصف العربي المختصر</label>
+      <textarea id="txt" placeholder="مثال: 3+1 أولويز ماكسي 16 حبة — ينتهي الإثنين — 9.75 د"></textarea>
+
+      <div class="row">
+        <div>
+          <label>نوع العرض</label>
+          <select id="kind">
+            <option value="featured">عرض مميز (featuredOffers.items)</option>
+            <option value="merge-strong">دمج قوي (mergedOffers.strong)</option>
+            <option value="merge-free">دمج حر (mergedOffers.free)</option>
+            <option value="company">عرض شركة (companies[].products)</option>
+          </select>
+        </div>
+        <div>
+          <label>تاريخ الانتهاء (اختياري)</label>
+          <input id="expires" type="date">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>السعر (اختياري)</label>
+          <input id="price" type="text" inputmode="decimal" placeholder="مثال: 9.75">
+        </div>
+        <div>
+          <label>العملة</label>
+          <input id="currency" type="text" value="JD">
+        </div>
+      </div>
+
+      <div class="line"></div>
+
+      <h2 style="display:flex;align-items:center;gap:8px">
+        ربط عروض الشركات
+        <span id="dsLoaded" class="badge" title="يحاول قراءة /data.js لإظهار الشركات">يحاول قراءة /data.js</span>
+      </h2>
+
+      <div class="row">
+        <div>
+          <label>اختر الشركة (إذا توفرت)</label>
+          <select id="companySelect">
+            <option value="">— لم يتم التحميل بعد / اختياري —</option>
+          </select>
+        </div>
+        <div>
+          <label>أو اكتب اسم الشركة يدويًا</label>
+          <input id="companyName" type="text" placeholder="مثال: Petra / Ariel / Always ...">
+        </div>
+      </div>
+
+      <div class="hint">
+        📝 القواعد الذكية:
+        <span class="pill">“3+1” ⇒ bonus {buy,get}</span>
+        <span class="pill">“ينتهي الإثنين/الخميس/السبت…” ⇒ expiry.weekday</span>
+        <span class="pill">“48ح/12ح/كرتونة/دزينة/باكيت” ⇒ تعبئة/وحدة</span>
+        <span class="pill">“9.75 د/دينار/JD” ⇒ price</span>
+      </div>
+
+      <div class="stack">
+        <button class="primary" id="btnBuild">حوّل إلى JSON</button>
+        <button class="ghost" id="btnClear">مسح الحقول</button>
+      </div>
+      <div class="footer-note">نصيحة: اكتب أولاً الوصف كاملًا ثم عدّل السعر/التاريخ يدويًا لو أردت.</div>
+    </section>
+
+    <!-- RIGHT: Output -->
+    <section class="card">
+      <h2>النتيجة</h2>
+      <div class="copy-wrap" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="ghost small" id="btnCopyObj">نسخ JSON</button>
+        <button class="ghost small" id="btnCopyPath">نسخ سطر الإدراج</button>
+        <button class="ghost small" id="btnDownload">تنزيل كملف .json</button>
+        <span class="muted">الصقها في <b>data.json</b> (أو استخدم سطر الإدراج).</span>
+      </div>
+      <pre id="out" class="out">{}</pre>
+
+      <h2 style="margin-top:10px">سطر الإدراج المقترح</h2>
+      <pre id="path" class="out">featuredOffers.items.push(…)</pre>
+
+      <div class="hint">
+        ✔️ المخرجات متوافقة مع أقسام:
+        <span class="pill">featuredOffers.items</span>
+        <span class="pill">mergedOffers.strong</span>
+        <span class="pill">mergedOffers.free</span>
+        <span class="pill">companies[i].products</span>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+
+  const txt = $('#txt');
+  const kind = $('#kind');
+  const expires = $('#expires');
+  const priceEl = $('#price');
+  const currency = $('#currency');
+  const out = $('#out');
+  const path = $('#path');
+  const selCompany = $('#companySelect');
+  const companyName = $('#companyName');
+  const dsLoaded = $('#dsLoaded');
+
+  // ============== Helpers ==============
+  const weekdaysMap = {
+    'السبت':'saturday','الأحد':'sunday','الاحد':'sunday','الاثنين':'monday','الإثنين':'monday',
+    'الثلاثاء':'tuesday','الاربعاء':'wednesday','الأربعاء':'wednesday','الخميس':'thursday','الجمعة':'friday'
+  };
+
+  function parseBonus(s){
+    const m = s.match(/(\d+)\s*\+\s*(\d+)/);
+    return m ? {buy:+m[1], get:+m[2]} : null;
+  }
+  function detectWeekday(s){
+    for(const k in weekdaysMap){
+      if(s.includes(k)) return weekdaysMap[k];
+    }
+    return null;
+  }
+  function detectPrice(s){
+    const m = s.match(/(\d+(?:[.,]\d+)?)(?=\s*(?:د|دينار|JD))/i);
+    return m ? +m[1].replace(',','.') : null;
+  }
+  function detectPackaging(s){
+    // returns [{label, pack}] e.g. [{label:'حبة',pack:16},{label:'كرتونة',pack:null}]
+    const packs = [];
+    let mm;
+    let reQty = /(\d+)\s*ح(?:ب|بة)?/g; // 48ح / 16 حبة
+    while((mm = reQty.exec(s))){ packs.push({label:'حبة', pack:+mm[1]}); }
+    // named units
+    const units = [
+      {re:/كرتونة|كرتون/g, label:'كرتونة'},
+      {re:/باكيت|بكيت/g, label:'باكيت'},
+      {re:/دزينة|دز/g, label:'دزينة'},
+      {re:/حزمة|ربطة/g, label:'حزمة'}
+    ];
+    units.forEach(u=>{
+      if(u.re.test(s)) packs.push({label:u.label, pack:null});
+      u.re.lastIndex = 0;
+    });
+    // de-dup
+    const seen = new Set();
+    return packs.filter(x=>{
+      const k = x.label+'|'+(x.pack??'');
+      if(seen.has(k)) return false;
+      seen.add(k); return true;
+    });
+  }
+  function titleFrom(s){
+    let t = s.replace(/\d+\s*\+\s*\d+/,''); // remove 3+1
+    t = t.replace(/ينتهي\s+\S+/,'');
+    t = t.replace(/(\d+(?:[.,]\d+)?)\s*(?:د|دينار|JD)/i,'');
+    t = t.replace(/[—\-–]+/g,' ');
+    return t.replace(/\s{2,}/g,' ').trim();
+  }
+  function composeDescription(unit, pack){
+    const parts = [];
+    if(unit) parts.push(unit);
+    if(pack) parts.push('تعبئة '+pack);
+    return parts.filter(Boolean).join(' — ');
+  }
+  function randId(prefix){ return prefix + '_' + Math.random().toString(36).slice(2,8); }
+
+  // ============== Build ==============
+  function build(){
+    const s = (txt.value||'').trim();
+    if(!s){ out.textContent='{}'; path.textContent='—'; return; }
+
+    const bonus = parseBonus(s);
+    const weekday = detectWeekday(s);
+    const detectedPrice = detectPrice(s);
+    const packs = detectPackaging(s);
+    const t = titleFrom(s) || s;
+
+    const chosenPrice = priceEl.value ? +priceEl.value.replace(',','.') : (detectedPrice ?? null);
+    const cur = (currency.value||'JD').trim();
+
+    // Basic object (common)
+    const obj = {
+      id: randId('offer'),
+      title: t,
+      description: s
+    };
+    if (chosenPrice!=null && !Number.isNaN(chosenPrice)) {
+      obj.price = chosenPrice;
+      obj.currency = cur;
+    }
+    if (bonus) obj.bonus = bonus;
+
+    // expiry
+    const exp = {};
+    if (expires.value) exp.date = expires.value;
+    if (weekday) exp.weekday = weekday;
+    if (Object.keys(exp).length) obj.expiry = exp;
+
+    // try to extract packaging/unit for description & variants
+    if (packs.length){
+      const firstNumeric = packs.find(p=>p.pack!=null);
+      const firstUnit = packs[0]?.label || null;
+      const mainUnit = firstNumeric ? 'حبة' : firstUnit;
+      const mainPack = firstNumeric ? firstNumeric.pack : null;
+
+      if (mainUnit) obj.unit = mainUnit;
+      if (mainPack!=null) obj.packaging = String(mainPack);
+
+      obj.variants = packs.map((p,i)=>({
+        id: obj.id+'_v'+(i+1),
+        label: p.label + (p.pack ? (' تعبئة '+p.pack) : ''),
+        packaging: p.pack ?? null
+      }));
+
+      if (!obj.description || obj.description===s){
+        const composed = composeDescription(obj.unit, obj.packaging);
+        if (composed) obj.description = obj.title + ' — ' + composed;
+      }
+    }
+
+    const k = kind.value;
+    let suggested = 'featuredOffers.items.push(OBJ);';
+    if (k==='merge-strong') suggested = 'mergedOffers.strong.push(OBJ);';
+    if (k==='merge-free')   suggested = 'mergedOffers.free.push(OBJ);';
+
+    // ==== Company Offer special mapping ====
+    if (k==='company'){
+      const selectedIdx = selCompany.value ? parseInt(selCompany.value,10) : null;
+      const typedName = (companyName.value||'').trim();
+      if (selectedIdx!=null && !Number.isNaN(selectedIdx)){
+        obj.companyId = window.__COMPANIES?.[selectedIdx]?.id || undefined;
+        obj.companyName = window.__COMPANIES?.[selectedIdx]?.name || undefined;
+      } else if (typedName){
+        obj.companyName = typedName;
+      }
+
+      // توافق مع سكيمـا الشركات (u1_* اختيارية لكنها مفيدة للوحة)
+      if (obj.unit)  obj.u1_unit = obj.unit;
+      if (obj.packaging!=null) obj.u1_pack = obj.packaging;
+      if (obj.price!=null) obj.u1_price = obj.price;
+
+      // وصف موحّد: "الوحدة — تعبئة X"
+      const unitTxt = (obj.unit||'').trim();
+      const packTxt = (obj.packaging||'')?.toString().trim();
+      const desc = [unitTxt, packTxt ? ('تعبئة '+packTxt) : ''].filter(Boolean).join(' — ');
+      if (desc) obj.description = desc;
+
+      suggested = 'companies[COMPANY_INDEX].products.push(OBJ);';
+    }
+
+    out.textContent = JSON.stringify(obj, null, 2);
+    path.textContent = suggested.replace('OBJ', JSON.stringify(obj));
+  }
+
+  // ============== Data.js loader (optional) ==============
+  (function loadDataJS(){
+    const s = document.createElement('script');
+    s.src = '/data.js?v=' + Date.now();
+    s.defer = true;
+    s.onload = function(){
+      try{
+        const D = window.ZAMZAM_DATA || window.DATA || window.data || window.ZamzamData;
+        const companies = (D && D.companies) ? D.companies : null;
+        if (companies && companies.length){
+          window.__COMPANIES = companies;
+          selCompany.innerHTML = '<option value="">— اختر الشركة —</option>';
+          companies
+            .map((c,idx)=>({name:c.name||c.title||c.id||('شركة '+(idx+1)), id:c.id||null, idx}))
+            .sort((a,b)=> a.name.localeCompare(b.name,'ar'))
+            .forEach(o=>{
+              const opt = document.createElement('option');
+              opt.value = String(o.idx);
+              opt.textContent = o.name;
+              selCompany.appendChild(opt);
+            });
+          dsLoaded.textContent = 'تم تحميل الشركات من /data.js';
+          dsLoaded.style.background = '#ecfdf5';
+          dsLoaded.style.color = '#065f46';
+          dsLoaded.style.border = '1px solid #a7f3d0';
+        }else{
+          dsLoaded.textContent = 'لم تُكتشف الشركات — الإدخال اليدوي متاح';
+        }
+      }catch(e){
+        dsLoaded.textContent = 'تعذّر قراءة /data.js — الإدخال اليدوي متاح';
+      }
+    };
+    s.onerror = function(){
+      dsLoaded.textContent = 'تعذّر تحميل /data.js — الإدخال اليدوي متاح';
+    };
+    document.head.appendChild(s);
+  })();
+
+  // ============== Events ==============
+  $('#btnBuild').addEventListener('click', build);
+  $('#btnClear').addEventListener('click', ()=>{
+    txt.value=''; priceEl.value=''; expires.value=''; companyName.value=''; selCompany.value='';
+    out.textContent='{}'; path.textContent='—';
+  });
+  $('#btnCopyObj').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(out.textContent||'{}');
+  });
+  $('#btnCopyPath').addEventListener('click', ()=>{
+    navigator.clipboard.writeText(path.textContent||'');
+  });
+  $('#btnDownload').addEventListener('click', ()=>{
+    const blob = new Blob([out.textContent||'{}'], {type:'application/json;charset=utf-8'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'offer.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+})();
+</script>
+</body>
+</html>

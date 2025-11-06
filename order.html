@@ -1,0 +1,395 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-3MB80QG8CE"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-3MB80QG8CE');
+  </script>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>طلب الشراء | زمزم جملة</title>
+
+  <style>
+    :root{--ink:#0b0b0b;--bg:#ffffff;--navy:#0d2240;--lav:#b794f4;--muted:#4b5563;--border:#e5e7eb;--green:#16a34a;--pill:#f1f5f9}
+    *{box-sizing:border-box}
+    body{margin:0;background:#fff;color:var(--ink);font-family:"Tajawal",system-ui,-apple-system,"Segoe UI",Roboto,Arial;padding-bottom:120px}
+    .page{max-width:1100px;margin:16px auto;padding:0 16px;border:4px solid var(--lav);border-radius:18px}
+    header{background:var(--navy);color:#fff;border-radius:12px;margin:16px 16px 0;padding:16px}
+    header h1{margin:0 0 6px;font-size:clamp(20px,4.5vw,32px)}
+    header .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    input[type="tel"]{padding:8px 10px;border-radius:10px;border:1px solid var(--border);font-family:inherit}
+    .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:#f8fafc;color:#111;text-decoration:none;font-weight:800;transition:background .2s}
+    .btn:hover{background:#e5e7eb}
+    .btn.primary{background:#22c55e;color:#062B11}
+    .btn.danger{background:#dc2626;color:#fff}
+    .notification{position:fixed;top:20px;right:20px;z-index:9999;background:#fff;border:2px solid var(--lav);border-radius:12px;padding:16px 20px;box-shadow:0 10px 30px rgba(0,0,0,.2);max-width:400px;display:none}
+    .notification.show{display:block;animation:slideIn .3s ease}
+    .notification.success{border-color:#16a34a;background:#f0fdf4}
+    .notification.warning{border-color:#f59e0b;background:#fffbeb}
+    .notification.error{border-color:#dc2626;background:#fef2f2}
+    @keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}
+    section{margin:16px}
+    h2{margin:0 0 8px;font-size:22px;font-weight:900}
+    .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .section-total{font-size:18px;font-weight:900;color:var(--green)}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .card{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;transition:box-shadow .2s}
+    .card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08)}
+    .card.has-quantity{border-color:var(--green);background:#f0fdf4}
+    .title{font-weight:800;font-size:15px;margin-bottom:4px}
+    .muted{color:var(--muted);font-size:13px}
+    .price{font-weight:800;color:var(--green)}
+    .unavailable{color:#b91c1c;font-weight:700}
+    .qtybox{display:flex;gap:6px;align-items:center;margin-top:8px}
+    .step{width:34px;height:34px;border-radius:8px;border:1px solid var(--border);background:#f8fafc;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+    .step:hover:not(:disabled){background:var(--green);color:#fff;border-color:var(--green)}
+    .step:disabled{opacity:.3;cursor:not-allowed}
+    .qty{width:70px;text-align:center;padding:8px;border-radius:8px;border:1px solid var(--border);font-weight:800;font-size:16px}
+    select.variant{margin-top:6px;padding:8px;border:1px solid var(--border);border-radius:8px;width:100%;font-family:inherit}
+    .line-total{margin-top:6px;font-size:14px;color:var(--muted)}
+    .line-total b{color:var(--green);font-size:15px}
+    .footerBar{position:fixed;bottom:0;left:0;right:0;z-index:998;background:#10b981;color:#032a1f;padding:14px 16px;box-shadow:0 -4px 20px rgba(0,0,0,.15);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+    .pill{padding:6px 12px;border-radius:999px;background:#fff;border:1px solid rgba(0,0,0,.1);font-size:14px;font-weight:800}
+    .pill b{color:var(--green)}
+    .footerBar .btn-send{display:inline-flex;align-items:center;gap:8px;background:#0d2240;color:#fff;border:2px solid #fff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:900;font-size:16px;transition:all .2s;cursor:pointer}
+    .footerBar .btn-send:hover{transform:scale(1.05);background:#1e3a8a}
+    .footerBar .btn-clear{background:#dc2626;color:#fff;border:none;padding:10px 16px;border-radius:999px;font-weight:800;cursor:pointer;transition:all .2s}
+    .footerBar .btn-clear:hover{background:#b91c1c}
+    .empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+    .empty-state h3{font-size:24px;margin-bottom:10px}
+    .empty-state p{font-size:16px;margin-bottom:20px}
+    @media (max-width:768px){
+      .cards{grid-template-columns:1fr}
+      .footerBar{flex-direction:column;padding:12px}
+      .footerBar .btn-send{width:100%}
+      header .row{flex-direction:column}
+      header .row .btn{width:100%}
+    }
+  </style>
+</head>
+
+<!-- شريط عروض العد التنازلي (كما هو) -->
+
+<body>
+  <div id="notification" class="notification"><div id="notification-text"></div></div>
+
+  <div class="page">
+    <header>
+      <h1>🛒 طلب الشراء — زمزم جملة</h1>
+      <div class="row">
+        <span>رقم واتساب لإرسال الطلب:</span>
+        <input id="phone" type="tel" value="962799755536" />
+        <a class="btn" href="index.html">⬅️ الرجوع لصفحة العروض</a>
+      </div>
+      <p class="muted" style="margin:6px 0 0">
+        اختر الكمية لكل مادة. المواد ذات النكهات مذكور عددها ضمن الاسم. 
+        بعض المواد تحتوي أكثر من تعبئة (سعر مختلف) وستظهر قائمة اختيار.
+        <strong>الطلب يُحفظ تلقائياً عند كل تغيير.</strong>
+      </p>
+    </header>
+
+    <!-- Merged Offers -->
+    <section id="sec-merge">
+      <div class="section-header">
+        <h2>💥 العروض المدمجة</h2>
+        <span class="section-total" id="total-merge">0.00 د.أ</span>
+      </div>
+      <div class="cards" id="cards-merge"></div>
+    </section>
+
+    <!-- Featured Offers -->
+    <section id="sec-featured">
+      <div class="section-header">
+        <h2>✨ العروض المميزة</h2>
+        <span class="section-total" id="total-featured">0.00 د.أ</span>
+      </div>
+      <div class="cards" id="cards-featured"></div>
+    </section>
+
+    <!-- Company Offers -->
+    <div id="companies-sections"></div>
+
+    <div id="empty-state" class="empty-state" style="display:none">
+      <h3>🛒 السلة فارغة</h3>
+      <p>لم تقم بإضافة أي منتجات بعد</p>
+      <a href="index.html" class="btn primary">تصفح العروض</a>
+    </div>
+  </div>
+
+  <div class="footerBar">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <span class="pill">دمج: <b id="sum-merge">0.00</b> د.أ</span>
+      <span class="pill">المميز: <b id="sum-featured">0.00</b> د.أ</span>
+      <span class="pill" id="companies-totals"></span>
+      <span class="pill" style="background:#eafff2;font-size:16px">الإجمالي: <b id="sum-grand" style="font-size:18px">0.00</b> د.أ</span>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn-clear" onclick="clearCart()">🗑️ مسح الكل</button>
+      <button class="btn-send" onclick="sendOrder()">📲 إرسال الطلب عبر واتساب</button>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="compat-data-alias.js"></script>
+  <script src="cart.js"></script>
+  <script>
+    let currentCart = null;
+
+    function showNotification(message, type = 'success') {
+      const notification = document.getElementById('notification');
+      const text = document.getElementById('notification-text');
+      text.textContent = message;
+      notification.className = `notification ${type} show`;
+      setTimeout(() => { notification.classList.remove('show'); }, 3000);
+    }
+
+    function makeCard(item, type, companyId = null, companyName = null) {
+      const hasVariants = item.hasVariants && item.variants && item.variants.length > 0;
+      const itemPrice = type === 'featured' ? item.discountedPrice : item.price;
+      const isUnavailable = !hasVariants && (itemPrice === null || itemPrice === undefined);
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.dataset.id = item.id;
+      card.dataset.type = type;
+      if (companyId) card.dataset.companyId = companyId;
+      let html = `<div class="title">${item.title}</div>`;
+      if (item.description) { html += `<div class="muted">${item.description}</div>`; }
+      let preferIndex = 0;
+      if (type === 'company' && hasVariants) {
+        const hasSecond = item.variants.length > 1 && item.variants[1] && item.variants[1].price != null;
+        preferIndex = hasSecond ? 1 : 0;
+      }
+      if (isUnavailable) {
+        html += `<div class="unavailable">غير متوفر</div>`;
+      } else if (hasVariants) {
+        html += `<select class="variant" onchange="handleVariantChange(this)">
+          ${item.variants.map((v, i) =>
+            `<option value="${i}" data-price="${v.price || 0}" ${i === preferIndex ? 'selected' : ''}>
+              ${v.label} — ${ZamzamCart.formatPrice(v.price || 0)} د.أ
+            </option>`
+          ).join('')}
+        </select>`;
+      } else {
+        const price = type === 'featured' ? item.discountedPrice : item.price;
+        html += `<div class="muted">السعر: <span class="price">${ZamzamCart.formatPrice(price)} د.أ</span></div>`;
+      }
+      if (!isUnavailable) {
+        const defaultPrice = hasVariants ? (item.variants[preferIndex]?.price || 0) : (type === 'featured' ? item.discountedPrice : item.price);
+        html += `
+          <div class="qtybox">
+            <button class="step" onclick="changeQuantity(this, -1)">−</button>
+            <input class="qty" type="number" min="0" step="1" value="0" onchange="handleQuantityChange(this)" data-price="${defaultPrice}" data-variant-index="${hasVariants ? preferIndex : ''}" />
+            <button class="step" onclick="changeQuantity(this, 1)">+</button>
+          </div>
+          <div class="line-total">إجمالي المادة: <b class="line-value">0.00 د.أ</b></div>`;
+      }
+      card.innerHTML = html;
+      card._itemData = {
+        id: item.id, title: item.title, type: type, companyId, companyName,
+        hasVariants: hasVariants, variants: hasVariants ? item.variants : null,
+        price: hasVariants ? (item.variants[preferIndex]?.price) : (type === 'featured' ? item.discountedPrice : item.price)
+      };
+      return card;
+    }
+
+    function isActiveCompany(c){
+      return c && !(c.active === false || c.active === 'false' || c.active === 0 || c.active === '0');
+    }
+
+    function loadProducts() {
+      const mergeContainer = document.getElementById('cards-merge');
+      (ZAMZAM_DATA.mergedOffers.items||[]).forEach(item => { mergeContainer.appendChild(makeCard(item, 'merged')); });
+
+      const featuredContainer = document.getElementById('cards-featured');
+      (ZAMZAM_DATA.featuredOffers.items||[]).forEach(item => { featuredContainer.appendChild(makeCard(item, 'featured')); });
+
+      const companiesContainer = document.getElementById('companies-sections');
+      (ZAMZAM_DATA.companies||[])
+        .filter(isActiveCompany)
+        .sort((a, b) => a.displayOrder - b.displayOrder)
+        .forEach(company => {
+          const section = document.createElement('section');
+          section.id = `sec-company-${company.id}`;
+          section.innerHTML = `
+            <div class="section-header">
+              <h2>${company.icon || ''} ${company.name}</h2>
+              <span class="section-total" id="total-company-${company.id}">0.00 د.أ</span>
+            </div>
+            <div class="cards" id="cards-company-${company.id}"></div>`;
+          companiesContainer.appendChild(section);
+          const cardsContainer = document.getElementById(`cards-company-${company.id}`);
+          (company.products||[]).filter(p=>p.visible!==false).forEach(product => {
+            cardsContainer.appendChild(makeCard(product, 'company', company.id, company.name));
+          });
+        });
+    }
+
+    function restoreCart() {
+      currentCart = ZamzamCart.load();
+      const syncResult = ZamzamCart.syncPrices(currentCart, ZAMZAM_DATA);
+      currentCart = syncResult.cart;
+      if (syncResult.hasChanges) {
+        const messages = syncResult.changes.map(c => {
+          if (c.change === 'removed') return `${c.title}: تم إزالته (غير متوفر)`;
+          return `${c.title}: ${ZamzamCart.formatPrice(c.oldPrice)} ← ${ZamzamCart.formatPrice(c.newPrice)}`;
+        });
+        showNotification('تم تحديث بعض الأسعار:\n' + messages.join('\n'), 'warning');
+      }
+      currentCart.items.forEach(item => {
+        const card = document.querySelector(
+          `.card[data-id="${item.id}"][data-type="${item.type}"]${item.companyId ? `[data-company-id="${item.companyId}"]` : ''}`
+        );
+        if (card) {
+          const qtyInput = card.querySelector('.qty');
+          if (qtyInput) {
+            qtyInput.value = item.quantity;
+            qtyInput.dataset.price = item.price;
+            if (item.variantIndex !== null && item.variantIndex !== undefined) {
+              const variantSelect = card.querySelector('.variant');
+              if (variantSelect) { variantSelect.value = item.variantIndex; }
+              qtyInput.dataset.variantIndex = item.variantIndex;
+            }
+            updateCardAppearance(card, item.quantity);
+          }
+        }
+      });
+      updateTotals();
+    }
+
+    function handleVariantChange(select) {
+      const card = select.closest('.card');
+      const qtyInput = card.querySelector('.qty');
+      const option = select.options[select.selectedIndex];
+      const newPrice = parseFloat(option.dataset.price || 0);
+      const variantIndex = parseInt(select.value);
+      qtyInput.dataset.price = newPrice;
+      qtyInput.dataset.variantIndex = variantIndex;
+      if (parseInt(qtyInput.value) > 0) { updateCartItem(card, parseInt(qtyInput.value)); }
+      updateLineTotal(card);
+    }
+
+    function handleQuantityChange(input) {
+      let value = parseInt(input.value || 0);
+      if (isNaN(value) || value < 0) value = 0;
+      input.value = value;
+      const card = input.closest('.card');
+      updateCartItem(card, value);
+      updateLineTotal(card);
+      updateCardAppearance(card, value);
+      updateTotals();
+    }
+
+    function changeQuantity(button, delta) {
+      const card = button.closest('.card');
+      const qtyInput = card.querySelector('.qty');
+      let value = parseInt(qtyInput.value || 0) + delta;
+      if (value < 0) value = 0;
+      qtyInput.value = value;
+      updateCartItem(card, value);
+      updateLineTotal(card);
+      updateCardAppearance(card, value);
+      updateTotals();
+    }
+
+    function updateCartItem(card, quantity) {
+      const itemData = card._itemData;
+      const qtyInput = card.querySelector('.qty');
+      const price = parseFloat(qtyInput.dataset.price || 0);
+      const variantIndex = qtyInput.dataset.variantIndex !== '' ? parseInt(qtyInput.dataset.variantIndex) : null;
+      const variantLabel = variantIndex !== null && itemData.variants ? itemData.variants[variantIndex]?.label : null;
+      const item = {
+        id: itemData.id, type: itemData.type, companyId: itemData.companyId || null, companyName: itemData.companyName || null,
+        title: itemData.title, price: price, quantity: quantity,
+        variantIndex: variantIndex, variantLabel: variantLabel, total: quantity * price
+      };
+      currentCart = ZamzamCart.updateItem(currentCart, item);
+    }
+
+    function updateLineTotal(card) {
+      const qtyInput = card.querySelector('.qty');
+      const lineValue = card.querySelector('.line-value');
+      if (!lineValue) return;
+      const quantity = parseInt(qtyInput.value || 0);
+      const price = parseFloat(qtyInput.dataset.price || 0);
+      const total = quantity * price;
+      lineValue.textContent = ZamzamCart.formatPrice(total) + ' د.أ';
+    }
+
+    function updateCardAppearance(card, quantity) {
+      if (quantity > 0) card.classList.add('has-quantity');
+      else card.classList.remove('has-quantity');
+    }
+
+function updateTotals(){
+  // إجماليات الدمج والمميز
+  document.getElementById('sum-merge').textContent     = ZamzamCart.formatPrice(currentCart.totals.merged);
+  document.getElementById('sum-featured').textContent  = ZamzamCart.formatPrice(currentCart.totals.featured);
+  document.getElementById('total-merge').textContent   = ZamzamCart.formatPrice(currentCart.totals.merged)  + ' د.أ';
+  document.getElementById('total-featured').textContent= ZamzamCart.formatPrice(currentCart.totals.featured)+ ' د.أ';
+
+  // تصفير مجاميع الشركات قبل التحديث
+  document.querySelectorAll('.section-total').forEach(el => { el.textContent = '0.00 د.أ'; });
+  // تنظيف شريط مجاميع الشركات السفلي
+  document.getElementById('companies-totals').innerHTML = '';
+
+  // إعادة بناء مجاميع الشركات
+  const companiesHTML = [];
+  Object.keys(currentCart.totals.companies).forEach(companyId => {
+    const total = currentCart.totals.companies[companyId];
+    const company = (ZAMZAM_DATA.companies||[]).find(c => c.id === companyId);
+    const companyName = company ? company.name : companyId;
+    companiesHTML.push(`${companyName}: <b>${ZamzamCart.formatPrice(total)}</b> د.أ`);
+    const totalEl = document.getElementById(`total-company-${companyId}`);
+    if (totalEl) totalEl.textContent = ZamzamCart.formatPrice(total) + ' د.أ';
+  });
+
+  if (companiesHTML.length > 0) {
+    document.getElementById('companies-totals').innerHTML = companiesHTML.join(' | ');
+  } else {
+    document.getElementById('companies-totals').innerHTML = '';
+  }
+
+  // الإجمالي النهائي وحالة السلة
+  document.getElementById('sum-grand').textContent = ZamzamCart.formatPrice(currentCart.totals.grand);
+  const emptyState = document.getElementById('empty-state');
+  emptyState.style.display = currentCart.items.length === 0 ? 'block' : 'none';
+}
+
+    function sendOrder() {
+      if (currentCart.items.length === 0) { showNotification('السلة فارغة! يرجى إضافة منتجات أولاً', 'warning'); return; }
+      const phone = document.getElementById('phone').value.trim();
+      if (!phone) { showNotification('يرجى إدخال رقم الواتساب', 'error'); return; }
+      const url = ZamzamCart.buildWhatsAppMessage(currentCart, phone);
+      if (typeof gtag !== 'undefined') {
+        gtag('event', 'whatsapp_order', { 'event_category': 'engagement','event_label': 'Order Sent','value': currentCart.totals.grand });
+      }
+      window.open(url, '_blank');
+      showNotification('جاري فتح واتساب...', 'success');
+    }
+
+    function clearCart() {
+      if (!confirm('هل أنت متأكد من مسح كل الطلب؟')) return;
+      ZamzamCart.clear();
+      currentCart = ZamzamCart.getEmptyCart();
+      document.querySelectorAll('.qty').forEach(input => {
+        input.value = 0;
+        const card = input.closest('.card');
+        updateCardAppearance(card, 0);
+        updateLineTotal(card);
+      });
+      updateTotals();
+      showNotification('تم مسح الطلب بنجاح', 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadProducts();
+      restoreCart();
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden && currentCart) ZamzamCart.save(currentCart);
+      });
+    });
+  </script>
+</body></html>

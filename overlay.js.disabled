@@ -1,0 +1,67 @@
+// overlay.js — يضيف عروض/منتجات بشكل فوري فوق البيانات الحالية بدون لمس data.js
+(function () {
+  // تأكد أن data.js محمّل
+  if (!window.ZAMZAM_DATA) { console.warn('ZAMZAM_DATA غير موجود'); return; }
+
+  // 1) إن لزم: تأكد أن الشركة موجودة (اختياري لو موجودة مسبقًا)
+  // عدّل "petra" و"البتراء" حسب شركتك
+  const ensureCompany = (id, name) => {
+    window.ZAMZAM_DATA.companies = window.ZAMZAM_DATA.companies || [];
+    if (!window.ZAMZAM_DATA.companies.some(c => c.id === id)) {
+      window.ZAMZAM_DATA.companies.push({ id, name, visible: true });
+    }
+  };
+
+  // 2) إن لزم: أضف/حدّث منتج معيّن (يُستخدم للعرض)
+  // عدّل code, name, unit, pack, price, companyId
+  const upsertProduct = (prod) => {
+    window.ZAMZAM_DATA.products = window.ZAMZAM_DATA.products || [];
+    const i = window.ZAMZAM_DATA.products.findIndex(p => p.code === prod.code);
+    if (i >= 0) window.ZAMZAM_DATA.products[i] = { ...window.ZAMZAM_DATA.products[i], ...prod };
+    else window.ZAMZAM_DATA.products.push(prod);
+  };
+
+  // 3) أضف عرض مميز جديد (يظهر فورًا في الصفحة)
+  // عدّل الحقول: companyId, productCode, discount, start, end, note
+  const addFeaturedOffer = (offer) => {
+    window.ZAMZAM_DATA.featuredOffers = window.ZAMZAM_DATA.featuredOffers || [];
+    // منع التكرار لنفس المنتج ضمن نفس الفترة
+    const exists = window.ZAMZAM_DATA.featuredOffers.some(o =>
+      (o.companyId === offer.companyId && o.productCode === offer.productCode && o.end === offer.end)
+    );
+    if (!exists) window.ZAMZAM_DATA.featuredOffers.push(offer);
+  };
+
+  // ====== عدّل هنا فقط وفق حاجتك الحالية ======
+  ensureCompany('petra', 'البتراء');
+
+  upsertProduct({
+    id: 'PET-001',
+    code: 'PET-001',       // معرّف/كود المنتج
+    companyId: 'petra',    // لازم يطابق companies.id
+    name: 'مبيض مركز 4 لتر',
+    unit: 'كرتونة',
+    pack: 6,
+    price: 8.50,
+    visible: true,
+    status: 'active'
+  });
+
+  // تاريخ الانتهاء اليوم/الخميس 6 مساءً (عدّل التواريخ حسب الحاجة)
+  const end = new Date();
+  // مثال: إضافة 3 أيام وينتهي الساعة 18:00
+  end.setDate(end.getDate() + 3);
+  end.setHours(18,0,0,0);
+
+  addFeaturedOffer({
+    companyId: 'petra',
+    productCode: 'PET-001',
+    discount: 10,                  // خصم 10% (عدّل)
+    start: new Date().toISOString(),
+    end: end.toISOString(),
+    note: 'عرض 3 أيام — نفاد الكمية'
+  });
+  // ====== انتهى التعديل ======
+
+  console.log('overlay.js: تم إضافة العرض/المنتج بنجاح');
+})();

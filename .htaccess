@@ -1,0 +1,12 @@
+<IfModule mod_expires.c>
+  ExpiresActive On
+  <Files "data.js">
+    ExpiresActive Off
+  </Files>
+</IfModule>
+<Files "data.js">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+  </IfModule>
+</Files>

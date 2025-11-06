@@ -1,0 +1,63 @@
+<script>
+(function(){
+  const $ = (s)=>document.querySelector(s);
+  const status = $('#status'), preview = $('#preview'), summary = $('#summary');
+  const btnScan = $('#btnScan'), btnSave = $('#btnSave');
+  const dry = $('#dry'), regenJs = $('#regenJs');
+
+  let payload = null;
+
+  function setStatus(msg, cls='muted'){ status.className = cls; status.textContent = msg; }
+
+  function summarize(obj){
+    try{
+      const companies = Array.isArray(obj?.companies) ? obj.companies.length : 0;
+      const featured = Array.isArray(obj?.featuredOffers?.items) ? obj.featuredOffers.items.length : 0;
+      const mergedStrong = Array.isArray(obj?.mergedOffers?.strong?.items) ? obj.mergedOffers.strong.items.length : 0;
+      const mergedFree   = Array.isArray(obj?.mergedOffers?.free?.items)   ? obj.mergedOffers.free.items.length   : 0;
+      return `شركات: ${companies} | مميز: ${featured} | دمج قوي: ${mergedStrong} | دمج حر: ${mergedFree}`;
+    }catch{ return 'غير متاح'; }
+  }
+
+  btnScan.onclick = () => {
+    try{
+      // قبول DATA أو ZAMZAM_DATA
+      if (!('DATA' in window) && ('ZAMZAM_DATA' in window)) {
+        window.DATA = window.ZAMZAM_DATA;
+      }
+      if (!('DATA' in window)) {
+        setStatus('لم يتم العثور على window.DATA أو ZAMZAM_DATA داخل /data.js', 'err');
+        preview.textContent = '—'; btnSave.disabled = true; payload = null; return;
+      }
+      payload = window.DATA;
+      const json = JSON.stringify(payload, null, 2);
+      preview.textContent = json;
+      summary.textContent = summarize(payload);
+      setStatus('تمت القراءة. جاهز للحفظ.', 'ok');
+      btnSave.disabled = false;
+    }catch(err){
+      setStatus('خطأ أثناء القراءة: ' + err.message, 'err');
+      btnSave.disabled = true; payload = null;
+    }
+  };
+
+  btnSave.onclick = async () => {
+    if (!payload){ setStatus('لا يوجد بيانات للحفظ', 'err'); return; }
+    if (dry.checked){ setStatus('وضع التجربة مفعل. لم يتم أي حفظ.', 'muted'); return; }
+
+    setStatus('جاري الحفظ ...');
+    try{
+      const res = await fetch('import-from-datajs.php' + (regenJs.checked ? '?regen=1' : ''), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok || !data || data.ok !== true) throw new Error(data?.error || ('HTTP ' + res.status));
+      setStatus('تم الحفظ' + (data.regen ? ' | تم توليد /data.js' : ''), 'ok');
+    }catch(err){
+      setStatus('فشل الحفظ: ' + err.message, 'err');
+    }
+  };
+})();
+</script>

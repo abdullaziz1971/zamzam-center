@@ -1,0 +1,73 @@
+<?php
+declare(strict_types=1);
+/**
+ * صفحة حفظ سريعة: تلصق JSON وتضغط زر "حفظ" -> تحفظ admin_v2/data.json وتولّد public_html/data.js
+ */
+require_once __DIR__.'/config.php';
+header('Content-Type: text/html; charset=utf-8');
+
+function write_atomic(string $target, string $content): array {
+  $dir = dirname($target);
+  if (!is_dir($dir) || !is_writable($dir)) return [false, 'dir_not_writable: '.$dir];
+  $tmp = $dir.'/.tmp_'.bin2hex(random_bytes(6));
+  if (@file_put_contents($tmp,$content)===false) return [false,'tmp_write_failed: '.$tmp];
+  if (file_exists($target)) {
+    @copy($target, ZAMZAM_BACKUP_DIR.'/'.basename($target).'.'.date('Ymd_His').'.bak');
+  }
+  if (!@rename($tmp,$target)) return [false,'rename_failed: '.$target];
+  return [true,null];
+}
+
+$msg = '';
+if ($_SERVER['REQUEST_METHOD']==='POST') {
+  $secret = $_POST['secret'] ?? '';
+  $raw    = $_POST['json'] ?? '';
+  if ($secret !== ZAMZAM_SHARED_SECRET) {
+    $msg = '❌ مفتاح سري خاطئ';
+  } elseif (!$raw) {
+    $msg = '❌ لا يوجد JSON';
+  } else {
+    $arr = json_decode($raw, true);
+    if (!is_array($arr)) {
+      $msg = '❌ JSON غير صالح';
+    } else {
+      // ختم وقت آخر تحديث ليسهل التأكد على الصفحة
+      $arr['meta']['updatedAt'] = date('Y-m-d H:i:s');
+      $json = json_encode($arr, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);
+
+      $jsonPath = __DIR__.'/data.json';
+      $jsPath   = dirname(__DIR__).'/data.js';
+      [$ok1,$e1] = write_atomic($jsonPath, $json);
+      if (!$ok1) {
+        $msg = '❌ فشل حفظ data.json: '.$e1;
+      } else {
+        $content = 'window.ZAMZAM_DATA='.$json.';';
+        [$ok2,$e2] = write_atomic($jsPath, $content);
+        $msg = $ok2 ? '✅ تم الحفظ والتوليد بنجاح' : ('❌ فشل توليد data.js: '.$e2);
+      }
+    }
+  }
+}
+?>
+<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>حفظ سريع للعروض</title>
+<style>body{font-family:system-ui,Arial;margin:16px} textarea,input,button{width:100%;padding:10px;margin:8px 0} .ok{color:#0a0}.err{color:#c00}</style>
+</head><body>
+<h1>حفظ سريع للعروض</h1>
+<form method="post">
+  <label>المفتاح السري (نفس قيمة ZAMZAM_SHARED_SECRET)</label>
+  <input type="password" name="secret" required>
+  <label>الصق JSON الكامل (العروض + الشركات)</label>
+  <textarea name="json" rows="18" placeholder='{"featuredOffers":[], "mergedOffers":{"strong":[],"free":[]}, "companies":[]}'><?php
+    if ($_SERVER['REQUEST_METHOD']!=='POST') {
+      @readfile(__DIR__.'/data.json');
+    } ?></textarea>
+  <button type="submit">حفظ وتوليد</button>
+</form>
+
+<?php if($msg): ?>
+<p class="<?= strpos($msg,'✅')!==false ? 'ok':'err' ?>"><?= htmlspecialchars($msg, ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8') ?></p>
+<?php endif; ?>
+
+<p>بعد النجاح: افتح <code>/offer.html</code> واعمل تحديث قوي (Ctrl+F5).</p>
+</body></html>

@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8">
+<title>Healthcheck</title>
+<pre id="o">Checking…</pre>
+<script>
+(async()=>{
+  const out = [];
+  function log(x){ out.push(x); document.getElementById('o').textContent=out.join('\\n'); }
+  try{
+    log('1) Fetch /data.js …');
+    const r1 = await fetch('/data.js',{cache:'no-store'});
+    log('   status: '+r1.status);
+    const t1 = await r1.text();
+    log('   has ZAMZAM_DATA: '+/window\\.ZAMZAM_DATA\\s*=/.test(t1));
+  }catch(e){ log('   ERROR: '+e.message); }
+  try{
+    log('2) Fetch admin.js …');
+    const r2 = await fetch('admin.js',{cache:'no-store'});
+    log('   status: '+r2.status);
+  }catch(e){ log('   ERROR: '+e.message); }
+  try{
+    log('3) POST save-data.php …');
+    const r3 = await fetch('save-data.php',{method:'POST',headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({password:'zamzam2025', companies:[], featuredOffers:{active:false,items:[]}, mergedOffers:{active:false,items:[]}})});
+    log('   status: '+r3.status);
+    const j = await r3.json().catch(()=>({}));
+    log('   json.ok: '+j.ok+'  error: '+(j.error||'-'));
+  }catch(e){ log('   ERROR: '+e.message); }
+})();
+</script>

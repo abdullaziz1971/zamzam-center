@@ -1,0 +1,271 @@
+<!DOCTYPE html><html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة الإدارة – v2</title>
+<link rel="stylesheet" href="admin.css">
+<style>body{background:#f6f7fb;margin:0}</style>
+</head><body>
+<header class="tools">
+  <button id="btnReload">إعادة التحميل</button>
+  <button id="btnSave">حفظ</button>
+  <!-- زر الإضافة من الشركات -->
+  <button id="openOfferPicker">إضافة من الشركات للعرض</button>
+
+  <input id="siteName" placeholder="اسم الموقع">
+  <input id="wa" placeholder="واتساب">
+  <input id="admPwd" type="password" placeholder="كلمة السر (تُحفظ محليًا)">
+  <span id="srcBadge" class="badge">—</span>
+  <span id="msg"></span>
+</header>
+
+<section class="sec">
+  <h3>العرض المميز</h3>
+  <button id="addFeaturedItem">إضافة عنصر</button>
+  <table id="tblFeatured">
+    <thead><tr>
+      <th class="col-lg">اسم المادة</th>
+      <th class="col-md">الوحدة</th>
+      <th class="col-sm pack">التعبئة</th>
+      <th class="col-sm price">السعر</th>
+      <th class="col-sm price">العرض المميز</th>
+      <th class="col-sm">فرق القيمة</th>
+      <th class="col-md">صورة</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <p class="small-note">حُذفت أعمدة الحذف/الإدراج — استخدم كبسة الفأرة اليمنى على الصف لإدراج أو حذف.</p>
+</section>
+
+<section class="sec">
+  <h3>الدمج القوي</h3>
+  <button id="addStrongItem">إضافة عنصر</button>
+  <table id="tblStrong">
+    <thead><tr>
+      <th class="col-lg">اسم المادة (B)</th>
+      <th class="col-md">الوحدة (B)</th>
+      <th class="col-sm pack">التعبئة (B)</th>
+      <th class="col-lg">اسم المادة (A)</th>
+      <th class="col-md">الوحدة (A)</th>
+      <th class="col-sm pack">التعبئة (A)</th>
+      <th class="col-sm price">عرض الدمج</th>
+      <th class="col-md">صورة</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section class="sec">
+  <h3>الدمج الحر</h3>
+  <button id="addFreeItem">إضافة عنصر</button>
+  <table id="tblFree">
+    <thead><tr>
+      <th class="col-lg">اسم المادة (B)</th>
+      <th class="col-md">الوحدة (B)</th>
+      <th class="col-sm pack">التعبئة (B)</th>
+      <th class="col-sm price">سعر (B) — مخفي</th>
+      <th class="col-md">الشركة (B)</th>
+      <th class="col-lg">اسم المادة (A)</th>
+      <th class="col-md">الوحدة (A)</th>
+      <th class="col-sm pack">التعبئة (A)</th>
+      <th class="col-sm price">سعر (A) — مخفي</th>
+      <th class="col-md">الشركة (A)</th>
+      <th class="col-md">صورة</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section class="sec">
+  <h3>الشركات</h3>
+  <button id="addCompany">إضافة شركة</button>
+  <table id="tblCompanies">
+    <thead><tr>
+      <th class="col-lg">الاسم</th>
+      <th class="col-md">المعرّف</th>
+      <th class="col-md">الأيقونة</th>
+      <th class="col-md">الشعار</th>
+      <th class="col-lg">الوصف</th>
+      <th class="col-sm">إظهار بالشركات</th>
+      <th class="col-sm">مفعّل</th>
+      <th class="col-sm">ترتيب</th>
+      <th class="col-sm">هامش وحدة 1 %</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<section class="sec">
+  <h3>المنتجات</h3>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+    <select id="companySelect"></select>
+    <button id="addProduct">إضافة منتج</button>
+    <button id="pasteExcel">لصق من إكسل</button>
+  </div>
+
+  <table id="tblProducts" class="compact">
+    <colgroup>
+      <col class="col-lg"><!-- اسم المادة -->
+      <col class="col-lg"><!-- ملاحظات -->
+      <col class="col-md"><!-- u1 name -->
+      <col class="col-sm"><!-- price1 -->
+      <col class="col-sm"><!-- min u1 -->
+      <col class="col-md"><!-- u2 name -->
+      <col class="col-sm"><!-- pack2 -->
+      <col class="col-sm"><!-- price2 -->
+      <col class="col-md"><!-- u3 name -->
+      <col class="col-sm"><!-- pack3 -->
+      <col class="col-sm"><!-- price3 -->
+      <col class="col-sm"><!-- free pack -->
+      <col class="col-sm"><!-- free price -->
+      <col class="col-sm"><!-- status -->
+      <col class="col-sm"><!-- code -->
+      <col class="col-sm"><!-- visible -->
+      <col class="col-md"><!-- image -->
+    </colgroup>
+    <thead><tr>
+      <th>اسم المادة</th>
+      <th>ملاحظات</th>
+      <th>الوحدة 1 (الاسم)</th>
+      <th class="price">السعر 1</th>
+      <th>الحد الأدنى (وحدة 1)</th>
+      <th>الوحدة 2 (الاسم)</th>
+      <th class="pack">التعبئة 2 (من الوحدة 1)</th>
+      <th class="price">السعر 2</th>
+      <th>الوحدة 3 (الاسم)</th>
+      <th class="pack">التعبئة 3 (من الوحدة 1)</th>
+      <th class="price">السعر 3</th>
+      <th>التعبئة (حر)</th>
+      <th>السعر (حر)</th>
+      <th>الحالة</th>
+      <th>كود</th>
+      <th>الظهور</th>
+      <th>صورة</th>
+    </tr></thead>
+    <tbody></tbody>
+  </table>
+  <p class="small-note">ملاحظة: أعمدة الحذف و# أُزيلت. للإدراج/الحذف انقر بزرّ الفأرة الأيمن على الصف.</p>
+</section>
+
+<!-- Right‑click menu -->
+<div id="ctxMenu" role="menu" aria-hidden="true">
+  <div class="item" data-act="before">➕ إدراج صف فوق</div>
+  <div class="item" data-act="after">➕ إدراج صف تحت</div>
+  <div class="item" data-act="delete">🗑️ حذف الصف</div>
+</div>
+
+<!-- Load data then admin JS -->
+<script src="/data.js"></script>
+<script src="admin.js?v=ui-compact3" defer></script>
+
+<!-- ===== Patch: تفعيل القائمة اليمنى لكل الجداول بدون لمس admin.js ===== -->
+<script>
+window.addEventListener('load', function(){
+  (function(){
+    var menu = document.getElementById('ctxMenu');
+    if(!menu) return;
+
+    function attachContextMenuFor(tableId){
+      document.addEventListener('contextmenu', function(e){
+        var t = e.target && e.target.closest('#'+tableId+' tbody td, #'+tableId+' tbody tr');
+        if(!t) return;
+        var tr = t.closest('tr'); if(!tr) return;
+        var row = Array.prototype.indexOf.call(tr.parentNode.children, tr);
+        var vw = window.innerWidth, vh = window.innerHeight;
+        var mw = menu.offsetWidth||180, mh = menu.offsetHeight||120;
+        var x = Math.min(e.clientX, vw - mw - 8);
+        var y = Math.min(e.clientY, vh - mh - 8);
+        menu.style.left = x + 'px';
+        menu.style.top  = y + 'px';
+        menu.style.display = 'block';
+        menu.dataset.rowIndex = String(row);
+        menu.dataset.table = tableId;
+        e.preventDefault();
+      });
+    }
+
+    document.addEventListener('click', function(ev){
+      var item = ev.target && ev.target.closest('#ctxMenu .item');
+      if(!item) return;
+      var table = menu.dataset.table || 'tblProducts';
+      if(table === 'tblProducts') return;
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      function hide(){ menu.style.display='none'; menu.dataset.rowIndex=''; menu.dataset.table=''; }
+      var i = Math.max(0, parseInt(menu.dataset.rowIndex||'0',10));
+      var act = item.getAttribute('data-act');
+
+      if(table === 'tblFeatured'){
+        var list = (STATE.featuredOffers.items = STATE.featuredOffers.items || []);
+        var blank = { id: Date.now(), title:'', unit:'', packaging:'', originalPrice:'', discountedPrice:'', image:'' };
+        if(act==='before' || act==='after'){ list.splice(act==='before'?i:i+1, 0, blank); }
+        else if(act==='delete'){ list.splice(i,1); }
+        renderFeatured(); hide(); return;
+      }
+
+      if(table === 'tblStrong'){
+        var listS = (STATE.mergedOffers.strong.items = STATE.mergedOffers.strong.items || []);
+        var blankS = { id:Date.now(), pairA_title:'', pairA_unit:'', pairA_packaging:'', pairB_title:'', pairB_unit:'', pairB_packaging:'', price:'', image:'' };
+        if(act==='before' || act==='after'){ listS.splice(act==='before'?i:i+1, 0, blankS); }
+        else if(act==='delete'){ listS.splice(i,1); }
+        renderStrong(); hide(); return;
+      }
+
+      if(table === 'tblFree'){
+        var listF = (STATE.mergedOffers.free.items = STATE.mergedOffers.free.items || []);
+        var blankF = { id:Date.now(), groupA_title:'', groupA_unit:'', groupA_packaging:'', groupA_priceHidden:'', groupA_company:'', groupB_title:'', groupB_unit:'', groupB_packaging:'', groupB_priceHidden:'', groupB_company:'', image:'' };
+        if(act==='before' || act==='after'){ listF.splice(act==='before'?i:i+1, 0, blankF); }
+        else if(act==='delete'){ listF.splice(i,1); }
+        renderFree(); hide(); return;
+      }
+
+      if(table === 'tblCompanies'){
+        var listC = (STATE.companies = STATE.companies || []);
+        var blankC = { id:'c'+Date.now(), name:'شركة جديدة', icon:'', logo:'', description:'', active:true, displayOrder:listC.length+1, settings:{showUnits:'unit2', marginU1:5}, products:[] };
+        if(act==='before' || act==='after'){ listC.splice(act==='before'?i:i+1, 0, blankC); }
+        else if(act==='delete'){ listC.splice(i,1); }
+        renderCompanies(); renderCompanySelect(); renderProducts(); hide(); return;
+      }
+    }, true);
+
+    ['tblFeatured','tblStrong','tblFree','tblCompanies'].forEach(attachContextMenuFor);
+  })();
+});
+</script>
+
+<!-- ==== Modal: اختيار شركة ومنتج للإضافة للعروض ==== -->
+<div id="offerPicker" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;min-width:720px;max-width:95vw;max-height:90vh;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,.25);padding:12px;overflow:auto">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <strong>إضافة من الشركات إلى:</strong>
+      <select id="op_type">
+        <option value="featured">العرض المميز</option>
+        <option value="strongA">الدمج القوي (طرف A)</option>
+        <option value="freeA">الدمج الحر (طرف A)</option>
+      </select>
+      <span style="margin-inline-start:auto"></span>
+      <button id="op_close">إغلاق</button>
+    </div>
+
+    <div class="grid2" style="display:grid;grid-template-columns:240px 1fr;gap:10px">
+      <div>
+        <label>الشركة</label>
+        <select id="op_company" style="width:100%;margin:6px 0"></select>
+        <input id="op_search" type="text" placeholder="بحث عن منتج…" style="width:100%">
+      </div>
+      <div style="max-height:60vh;overflow:auto;border:1px solid #e6e8ef;border-radius:8px">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr>
+              <th style="border-bottom:1px solid #e6e8ef;padding:8px">الصنف</th>
+              <th style="border-bottom:1px solid #e6e8ef;padding:8px">التعبئة</th>
+              <th style="border-bottom:1px solid #e6e8ef;padding:8px;width:120px">إجراء</th>
+            </tr>
+          </thead>
+          <tbody id="op_body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body></html>

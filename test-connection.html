@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اختبار الربط - لوحة تحكم زمزم</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 800px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #667eea;
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .test-section {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .test-title {
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .result {
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      background: #764ba2;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    .loading {
+      text-align: center;
+      color: #667eea;
+      font-size: 18px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 اختبار ربط لوحة التحكم</h1>
+    
+    <div class="test-section">
+      <div class="test-title">1️⃣ اختبار تحميل ملف config.js</div>
+      <div id="config-result" class="result info">انتظر...</div>
+    </div>
+    
+    <div class="test-section">
+      <div class="test-title">2️⃣ اختبار تحميل ملف data.js</div>
+      <div id="data-result" class="result info">انتظر...</div>
+    </div>
+    
+    <div class="test-section">
+      <div class="test-title">3️⃣ عدد العروض المدمجة</div>
+      <div id="merged-result" class="result info">انتظر...</div>
+    </div>
+    
+    <div class="test-section">
+      <div class="test-title">4️⃣ عدد العروض المميزة</div>
+      <div id="featured-result" class="result info">انتظر...</div>
+    </div>
+    
+    <div class="test-section">
+      <div class="test-title">5️⃣ عدد الشركات</div>
+      <div id="companies-result" class="result info">انتظر...</div>
+    </div>
+    
+    <button onclick="runTests()">🔄 إعادة الاختبار</button>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="data.js"></script>
+  <script>
+    function showResult(elementId, message, type) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = 'result ' + type;
+    }
+
+    function runTests() {
+      // Test 1: Config file
+      try {
+        if (typeof ADMIN_CONFIG !== 'undefined') {
+          showResult('config-result', 
+            '✅ تم تحميل config.js بنجاح\n' +
+            'المسار: ' + ADMIN_CONFIG.dataFilePath + '\n' +
+            'رقم الواتساب: ' + ADMIN_CONFIG.whatsappNumber,
+            'success'
+          );
+        } else {
+          showResult('config-result', '❌ فشل تحميل config.js', 'error');
+        }
+      } catch (e) {
+        showResult('config-result', '❌ خطأ: ' + e.message, 'error');
+      }
+
+      // Test 2: Data file
+      try {
+        if (typeof ZAMZAM_DATA !== 'undefined') {
+          showResult('data-result', 
+            '✅ تم تحميل data.js بنجاح\n' +
+            'الإصدار: ' + ZAMZAM_DATA.metadata.version + '\n' +
+            'آخر تحديث: ' + ZAMZAM_DATA.metadata.lastUpdate,
+            'success'
+          );
+        } else {
+          showResult('data-result', '❌ فشل تحميل data.js', 'error');
+        }
+      } catch (e) {
+        showResult('data-result', '❌ خطأ: ' + e.message, 'error');
+      }
+
+      // Test 3: Merged offers
+      try {
+        if (ZAMZAM_DATA && ZAMZAM_DATA.mergedOffers) {
+          const count = ZAMZAM_DATA.mergedOffers.items.length;
+          showResult('merged-result', 
+            '✅ العروض المدمجة: ' + count + ' عرض\n' +
+            'مثال: ' + (ZAMZAM_DATA.mergedOffers.items[0]?.title || 'لا يوجد'),
+            'success'
+          );
+        } else {
+          showResult('merged-result', '❌ لا توجد عروض مدمجة', 'error');
+        }
+      } catch (e) {
+        showResult('merged-result', '❌ خطأ: ' + e.message, 'error');
+      }
+
+      // Test 4: Featured offers
+      try {
+        if (ZAMZAM_DATA && ZAMZAM_DATA.featuredOffers) {
+          const count = ZAMZAM_DATA.featuredOffers.items.length;
+          showResult('featured-result', 
+            '✅ العروض المميزة: ' + count + ' عرض\n' +
+            'مثال: ' + (ZAMZAM_DATA.featuredOffers.items[0]?.title || 'لا يوجد'),
+            'success'
+          );
+        } else {
+          showResult('featured-result', '❌ لا توجد عروض مميزة', 'error');
+        }
+      } catch (e) {
+        showResult('featured-result', '❌ خطأ: ' + e.message, 'error');
+      }
+
+      // Test 5: Companies
+      try {
+        if (ZAMZAM_DATA && ZAMZAM_DATA.companies) {
+          const count = ZAMZAM_DATA.companies.length;
+          showResult('companies-result', 
+            '✅ الشركات: ' + count + ' شركة\n' +
+            'مثال: ' + (ZAMZAM_DATA.companies[0]?.name || 'لا يوجد'),
+            'success'
+          );
+        } else {
+          showResult('companies-result', '⚠️ لا توجد شركات (هذا طبيعي إذا لم تضف شركات بعد)', 'info');
+        }
+      } catch (e) {
+        showResult('companies-result', '❌ خطأ: ' + e.message, 'error');
+      }
+    }
+
+    // Run tests on page load
+    window.onload = runTests;
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,219 @@
+<?php
+// admin_v2/harden_admin.php
+// Run once via browser: https://your-domain/admin_v2/harden_admin.php?secret=abd5526117
+declare(strict_types=1);
+header('Content-Type: text/plain; charset=utf-8');
+
+// ========== CONFIG ==========
+const SECRET = 'abd5526117'; // <<< قبل الرفع: عدّل هذا إلى سِرّ قوي
+$ROOT_DOC = rtrim($_SERVER['DOCUMENT_ROOT'] ?? dirname(__DIR__).'/public_html', '/');
+$ADMIN_DIR = __DIR__;
+$PUBLIC_DIR = $ROOT_DOC;
+$BACKUP_DIR = $ADMIN_DIR . '/backups';
+@mkdir($BACKUP_DIR, 0775, true);
+$report_lines = [];
+
+function out($s){ global $report_lines; $report_lines[] = $s; echo $s . PHP_EOL; flush(); }
+
+// 1) auth
+$provided = $_GET['secret'] ?? '';
+if (!hash_equals(SECRET, (string)$provided)) {
+  http_response_code(401);
+  out("[ERROR] invalid secret. Aborting.");
+  exit;
+}
+out("[OK] secret accepted. Starting hardening run.");
+
+// helpers
+function safe_copy($src,$dst){
+  @is_file($src) || return_null();
+  @mkdir(dirname($dst), 0775, true);
+  return @copy($src,$dst);
+}
+function return_null(){ return null; }
+
+// file helpers
+function backup_file($path, $bakdir){
+  if (!is_file($path)) return null;
+  $ts = gmdate('Ymd_His');
+  $bn = basename($path);
+  $bak = rtrim($bakdir,'/').'/' . $bn . '.' . $ts . '.bak';
+  if (@copy($path,$bak)) return $bak;
+  return null;
+}
+
+$sensitive_keys = ['password','adminPassword','secrets','tokens','apiKey','auth','secret'];
+
+// ========== Step A: paths & existence ==========
+$paths = [
+  'admin_json' => $ADMIN_DIR . '/data.json',
+  'public_js'  => $PUBLIC_DIR . '/data.js'
+];
+out("[INFO] admin_json: " . $paths['admin_json']);
+out("[INFO] public_js : " . $paths['public_js']);
+
+// ========== Step B: backup originals ==========
+$b_admin = backup_file($paths['admin_json'],$BACKUP_DIR);
+$b_public = backup_file($paths['public_js'],$BACKUP_DIR);
+out("[BACKUP] admin_json backup: " . ($b_admin ?? 'NOT FOUND'));
+out("[BACKUP] public_js  backup: " . ($b_public ?? 'NOT FOUND'));
+
+// ========== Step C: read admin JSON ==========
+if (!is_file($paths['admin_json'])) {
+  out("[WARN] admin_v2/data.json not found. Will try to read from public data.js instead.");
+  $from_js = @file_get_contents($paths['public_js']);
+  if ($from_js === false) {
+    out("[ERROR] no data.json and no public data.js. Aborting.");
+    file_put_contents($BACKUP_DIR.'/harden-report-'.gmdate('Ymd_His').'.txt', implode("\n",$report_lines));
+    exit;
+  }
+  // try extract JSON inside data.js
+  if (preg_match('/window\.ZAMZAM_DATA\s*=\s*(\{.*\});/sU',$from_js,$m)) {
+    $jsontext = $m[1];
+    $data = json_decode($jsontext,true);
+    if (!is_array($data)) { out("[ERROR] failed to decode JSON from data.js. Aborting."); file_put_contents($BACKUP_DIR.'/harden-report-'.gmdate('Ymd_His').'.txt', implode("\n",$report_lines)); exit; }
+    out("[INFO] extracted JSON from public data.js into memory.");
+  } else {
+    out("[ERROR] could not locate window.ZAMZAM_DATA in public data.js. Aborting.");
+    file_put_contents($BACKUP_DIR.'/harden-report-'.gmdate('Ymd_His').'.txt', implode("\n",$report_lines));
+    exit;
+  }
+} else {
+  $raw = @file_get_contents($paths['admin_json']);
+  $data = json_decode($raw,true);
+  if (!is_array($data)) { out("[ERROR] admin_v2/data.json exists but is not valid JSON. Aborting."); file_put_contents($BACKUP_DIR.'/harden-report-'.gmdate('Ymd_His').'.txt', implode("\n",$report_lines)); exit; }
+  out("[OK] loaded admin_v2/data.json (".count($data)." top keys).");
+}
+
+// ========== Step D: sanitize recursively ==========
+function sanitize_recursive(array $arr, array $skeys){
+  foreach ($arr as $k => $v){
+    if (in_array(strtolower($k), array_map('strtolower',$skeys), true)) {
+      unset($arr[$k]);
+      continue;
+    }
+    if (is_array($v)) $arr[$k] = sanitize_recursive($v,$skeys);
+  }
+  return $arr;
+}
+$before_summary = json_encode(array_keys($data));
+$data_clean = sanitize_recursive($data,$sensitive_keys);
+out("[CLEAN] removed sensitive keys (if present): " . implode(',', $sensitive_keys));
+
+// ========== Step E: write cleaned admin data.json (atomic) ==========
+$ts = gmdate('Ymd_His');
+$tmpjson = $paths['admin_json'] . '.tmp';
+if (file_put_contents($tmpjson, json_encode($data_clean, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES), LOCK_EX) === false) {
+  out("[ERROR] failed writing tmp admin json: $tmpjson. Aborting.");
+  file_put_contents($BACKUP_DIR.'/harden-report-'.gmdate('Ymd_His').'.txt', implode("\n",$report_lines));
+  exit;
+}
+rename($tmpjson, $paths['admin_json']);
+out("[OK] wrote cleaned admin_v2/data.json and atomically moved it.");
+
+// backup record
+$report_backups = [];
+$report_backups[] = $b_admin ?: 'none';
+$report_backups[] = $b_public ?: 'none';
+
+// ========== Step F: generate public data.js from cleaned JSON ==========
+$js_payload = "window.ZAMZAM_DATA=" . json_encode($data_clean, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) . ";\n";
+$js_payload .= "if (typeof window !== 'undefined' && window.ZAMZAM_DATA && !window.DATA) { window.DATA = window.ZAMZAM_DATA; }\n";
+$js_payload .= "/* build_ts:$ts */\n";
+
+// ensure output dir
+@mkdir(dirname($paths['public_js']),0755,true);
+$tmpjs = $paths['public_js'] . '.tmp';
+if (file_put_contents($tmpjs, $js_payload, LOCK_EX) === false) {
+  out("[ERROR] failed to write tmp public data.js");
+} else {
+  if (rename($tmpjs, $paths['public_js'])) {
+    out("[OK] regenerated public_html/data.js from cleaned data. build_ts: $ts");
+    $report_backups[] = $paths['public_js'];
+  } else {
+    out("[ERROR] failed to rename tmp data.js into place.");
+  }
+}
+
+// ========== Step G: create protective .htaccess in admin_v2 (non-destructive) ==========
+$ht_admin = $ADMIN_DIR . '/.htaccess';
+$ht_admin_content = <<<HTA
+# admin_v2 access control - generated by harden_admin.php
+# NOTE: Replace ALLOWED_IP_HERE with your office IP or configure proper .htpasswd
+<IfModule mod_authz_core.c>
+  Require ip ALLOWED_IP_HERE
+  Require ip ::1
+  Require ip 127.0.0.1
+</IfModule>
+<IfModule !mod_authz_core.c>
+  Order deny,allow
+  Deny from all
+  Allow from 127.0.0.1
+</IfModule>
+
+# Prevent indexing
+Header set X-Robots-Tag "noindex, nofollow"
+HTA;
+if (!file_exists($ht_admin)) file_put_contents($ht_admin, $ht_admin_content);
+out("[INFO] created admin_v2/.htaccess (edit ALLOWED_IP_HERE to your IP, or replace with AuthUserFile + Require valid-user).");
+
+// ========== Step H: restrict JSON access inside admin_v2 ==========
+$ht_json = $ADMIN_DIR . '/.deny_json.htaccess';
+$ht_json_content = <<<HTJ
+# deny direct access to json/php files in admin_v2
+<FilesMatch "\.(json|php)$">
+  Require all denied
+</FilesMatch>
+HTJ;
+file_put_contents($ht_json, $ht_json_content);
+out("[OK] placed admin_v2/.deny_json.htaccess (blocks direct access to .json/.php within admin_v2 where supported).");
+
+// ========== Step I: append no-cache rule for public data.js in public_html/.htaccess ==========
+$pub_ht = $PUBLIC_DIR . '/.htaccess';
+$no_cache_block = <<<NCH
+# ensure data.js served without long cache (generated by harden_admin.php)
+<Files "data.js">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+  </IfModule>
+</Files>
+NCH;
+if (is_writable($pub_ht) || !file_exists($pub_ht)) {
+  // append only if not already present
+  $existing = is_file($pub_ht) ? file_get_contents($pub_ht) : '';
+  if (strpos($existing, 'ensure data.js served without long cache') === false) {
+    file_put_contents($pub_ht, $existing . PHP_EOL . $no_cache_block);
+    out("[OK] updated public_html/.htaccess to disable caching for data.js (appended).");
+  } else {
+    out("[INFO] public_html/.htaccess already contains data.js no-cache block.");
+  }
+} else {
+  out("[WARN] public_html/.htaccess not writable. Please append the data.js no-cache block manually.");
+}
+
+// ========== Step J: report files touched and next steps ==========
+out(PHP_EOL . "=== SUMMARY ===");
+out("Backups created: " . implode(' | ', array_filter($report_backups)));
+out("Cleaned keys removed: " . implode(',', $sensitive_keys));
+$out_file = $paths['public_js'];
+out("public data.js path: $out_file");
+$out_report = $BACKUP_DIR . '/harden-report-' . $ts . '.txt';
+file_put_contents($out_report, implode(PHP_EOL, $report_lines));
+out("A log copy saved: $out_report");
+
+out(PHP_EOL . "=== NEXT MANUAL ACTIONS (CRITICAL) ===");
+out("1) Edit admin_v2/.htaccess: replace ALLOWED_IP_HERE with your office IP(s) or replace block with Basic Auth lines and create a secure .htpasswd outside public_html.");
+out("   Example Basic Auth snippet to replace inside .htaccess:");
+out('   AuthType Basic');
+out('   AuthName "Admin Area"');
+out('   AuthUserFile /home/USER/.htpasswd');
+out('   Require valid-user');
+out("2) Change SECRET constant in this script to a new secret after successful run, or remove the script from server.");
+out("3) Purge CDN/Cloudflare cache for /data.js and verify https://YOUR-DOMAIN/data.js?ts=".time());
+out("4) Do NOT leave password fields in any UI that posts directly into save endpoints. Remove password inputs from paste-offers.html / migrate pages.");
+out("5) Send me (or paste here) the contents of save-data.php and publish-endpoint.php for automated sanitization suggestions and safe patch snippets.");
+
+out(PHP_EOL . "Run finished.");
+
+exit;

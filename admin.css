@@ -1,0 +1,81 @@
+*{box-sizing:border-box}
+body{margin:0;font-family:sans-serif;background:#f6f7fb;color:#222}
+#app{display:flex;min-height:100vh}
+#sidebar{width:240px;background:#1f2a44;color:#fff;padding:16px;display:flex;flex-direction:column;gap:12px}
+#sidebar h2{margin:0 0 12px;font-size:18px}
+#sidebar nav{display:flex;flex-direction:column;gap:8px}
+#sidebar button{background:#2f3c5a;border:0;color:#fff;padding:10px;border-radius:8px;cursor:pointer;text-align:right}
+#sidebar button:hover{background:#3b4a6f}
+#sidebar .small{opacity:.8;font-size:12px;margin-top:auto}
+#content{flex:1;padding:16px}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.toolbar #msg{margin-inline-start:auto;font-weight:bold}
+.sec{background:#fff;border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 2px 4px rgba(0,0,0,.05)}
+.sec.hidden{display:none}
+.sec-title{display:flex;align-items:center;justify-content:space-between}
+
+/* Compact tables */
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+th,td{border:1px solid #e6e8ef;padding:4px 6px;font-size:13px;line-height:1.25;vertical-align:middle}
+thead th{background:#f0f2f7;position:sticky;top:0;z-index:2}
+tbody tr:hover{background:#fafafa}
+input[type="text"],input[type="number"],input[type="url"],input[type="checkbox"],input[type="password"],select{padding:4px 6px;border:1px solid #d9dbe2;border-radius:6px;width:100%;height:28px;font-size:13px}
+input[type="checkbox"]{width:auto;height:auto}
+
+/* Column sizing */
+.col-lg{width:320px}
+.col-md{width:160px}
+.col-sm{width:110px}
+
+/* Make price and pack same visual width (use .col-sm on both) */
+th.price,td.price,th.pack,td.pack{}
+
+.badge{display:inline-block;background:#e9eefc;color:#234;padding:2px 6px;border-radius:6px;font-size:12px}
+#srcBadge{margin-inline-start:8px}
+
+/* Right‑click context menu */
+#ctxMenu{position:fixed;inset:auto auto 0 0;display:none;min-width:180px;background:#fff;border:1px solid #e6e8ef;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.12);z-index:9999}
+#ctxMenu .item{padding:8px 12px;cursor:pointer}
+#ctxMenu .item:hover{background:#f2f5fb}
+
+/* Free‑merge table fit */
+#tblFree{table-layout:fixed}
+#tblFree th,#tblFree td{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* Visual tweaks */
+header.tools{display:flex;gap:8px;align-items:center;padding:10px}
+#msg{font-weight:bold}
+.small-note{color:#667085;font-size:12px}
+/* ===== ضبط #tblProducts ليكون أنحف ومقروءاً ===== */
+#tblProducts { table-layout: fixed; }
+#tblProducts th, #tblProducts td {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* الملاحظات → إلى الثلث تقريباً (~108px بدلاً من 320px) */
+#tblProducts col:nth-child(2) { width: 108px; }
+
+/* الوحدة 1/2/3 → إلى النصف (80px بدلاً من 160px) */
+#tblProducts col:nth-child(3),
+#tblProducts col:nth-child(6),
+#tblProducts col:nth-child(9) { width: 80px; }
+
+/* أعمدة التعبئة 2/3 + "التعبئة (حر)" → إلى النصف (55px بدلاً من 110px) */
+#tblProducts col:nth-child(7),
+#tblProducts col:nth-child(10),
+#tblProducts col:nth-child(12) { width: 55px; }
+
+/* ===== جعل جداول الدمج القوي/الحر/الشركات على قدر الشاشة ===== */
+/* تقليص أحجام col-* داخل هذه الجداول فقط */
+#tblStrong th.col-lg,   #tblFree th.col-lg,   #tblCompanies th.col-lg   { width: 240px; }
+#tblStrong th.col-md,   #tblFree th.col-md,   #tblCompanies th.col-md   { width: 120px; }
+#tblStrong th.col-sm,   #tblFree th.col-sm,   #tblCompanies th.col-sm   { width: 90px;  }
+
+#tblStrong th, #tblStrong td,
+#tblFree   th, #tblFree   td,
+#tblCompanies th, #tblCompanies td {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* في الشاشات الضيقة: السماح بالتمرير الأفقي داخل القسم فقط */
+.sec { overflow-x: auto; }

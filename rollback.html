@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="ar" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>استرجاع نسخة احتياطية</title>
+<style>body{font-family:system-ui,Arial;margin:16px} fieldset{border:1px solid #ccc;border-radius:8px;padding:12px;margin:12px 0}
+input,button{padding:8px;margin:6px 0} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px} th{background:#f6f8fa}</style>
+</head><body>
+<h1>استرجاع نسخة احتياطية</h1>
+
+<fieldset>
+  <label>المفتاح السري</label>
+  <input id="secret" type="password" placeholder="نفس قيمة ZAMZAM_SHARED_SECRET" style="width:320px">
+  <button id="btnLoad">عرض النسخ</button>
+</fieldset>
+
+<div id="list"></div>
+<div id="status"></div>
+
+<script>
+async function load() {
+  const secret=document.getElementById('secret').value.trim();
+  const r=await fetch('rollback-list.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'secret='+encodeURIComponent(secret)});
+  const data=await r.json();
+  const d=document.getElementById('list'); d.innerHTML='';
+  if(!data.ok){d.textContent='فشل: '+(data.error||data.code);return;}
+  if(!data.items.length){d.textContent='لا توجد نسخ.';return;}
+  let html='<form id="f"><table><thead><tr><th></th><th>الملف</th><th>التاريخ</th><th>الحجم</th><th>سيُسترجع إلى</th></tr></thead><tbody>';
+  for(const it of data.items){
+    html+=`<tr>
+<td><input type="radio" name="file" value="${it.name}"></td>
+<td>${it.name}</td>
+<td>${it.mtime_h}</td>
+<td>${it.size_h}</td>
+<td>${it.target_path}</td>
+</tr>`;
+  }
+  html+='</tbody></table><br><button type="submit">استرجاع</button></form>';
+  d.innerHTML=html;
+  document.getElementById('f').onsubmit=async (e)=>{
+    e.preventDefault();
+    const file=new FormData(e.target).get('file');
+    if(!file){alert('اختر نسخة');return;}
+    const res=await fetch('rollback-restore.php',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'secret='+encodeURIComponent(secret)+'&file='+encodeURIComponent(file)});
+    const j=await res.json();
+    document.getElementById('status').textContent=j.ok?'تم الاسترجاع بنجاح.':'فشل: '+(j.error||j.code);
+  };
+}
+document.getElementById('btnLoad').onclick=load;
+</script>
+</body></html>
